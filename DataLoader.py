@@ -26,11 +26,11 @@ def LoadData(ImgSize, BatchSize=32):
 
     ValidationDS = tf.keras.preprocessing.image_dataset_from_directory(
         TEST_DIR,
-        validation_split=0.2,
-        subset="training",
+        subset="validation",
         seed=123,
         image_size=ImgSize,
-        batch_size=BatchSize)
+        batch_size=BatchSize,
+        shuffle=False)
 
     ClassNames = os.listdir(TRAIN_DIR)
 

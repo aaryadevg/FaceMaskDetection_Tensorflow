@@ -11,28 +11,24 @@ ImgSize = (64, 64)
 print("Loading Data\n")
 TrainDs, ValDs, Classes = DataLoader.LoadData(ImgSize)
 
-Model = Sequential([
-    layers.experimental.preprocessing.Rescaling(
-        1./255, input_shape=(ImgSize[0], ImgSize[1], 3)),
-
-    layers.Conv2D(32, 4, padding='same', activation="relu"),
-    layers.MaxPool2D(),
-
-    layers.Conv2D(64, 4, padding='same', activation="relu"),
-    layers.MaxPool2D(),
-
-    layers.Conv2D(128, 3, padding='same', activation='relu'),
-    layers.MaxPooling2D(),
-
-    layers.Dropout(0.2),
-    layers.Flatten(),
-
-    layers.Dense(len(Classes), activation='sigmoid')
-])
+Model = tf.keras.models.Sequential(
+    [
+        tf.keras.layers.experimental.preprocessing.Rescaling(
+            1.0 / 255, input_shape=(ImgSize[0], ImgSize[1], 3)
+        ),
+        tf.keras.layers.Conv2D(16, (2,2), padding="same", activation="relu"),
+        tf.keras.layers.MaxPool2D(),
+        tf.keras.layers.Conv2D(32, (2,2), padding="same", activation="relu"),
+        tf.keras.layers.MaxPool2D(),
+        tf.keras.layers.Dropout(0.2),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(10, activation="relu"),
+        tf.keras.layers.Dense(1, activation="sigmoid"),
+    ]
+)
 
 Model.compile(optimizer='adam',
-              loss=tf.keras.losses.SparseCategoricalCrossentropy(
-                  from_logits=True),
+              loss= tf.keras.losses.binary_crossentropy,
               metrics=['accuracy'])
 
 print("\nSummary of Model\n")
@@ -42,19 +38,28 @@ Model.summary()
 epochs = 10
 print(f"\nTraining model for {epochs} Epochs\n")
 
-checkpoint_path = "training_2/cp-{epoch:04d}.ckpt"
-checkpoint_dir = os.path.dirname(checkpoint_path)
+checkpoint_path = "training"
+os.makedirs(checkpoint_path, exist_ok=True)
+checkpoint_dir = os.path.join(checkpoint_path, "cp-{epoch:04d}.ckpt")
 
 cp_callback = tf.keras.callbacks.ModelCheckpoint(
     filepath=checkpoint_path,
     verbose=1,
     save_weights_only=True,
-    save_freq=160)
+    save_freq="epoch")
+
+es_callback = tf.keras.callbacks.EarlyStopping(
+    monitor='val_accuracy',
+    min_delta=0.01,
+    patience=2
+)
 
 History = Model.fit(
     TrainDs,
     validation_data=ValDs,
     epochs=epochs,
+    verbose = 2,
+    callbacks=[cp_callback, es_callback] 
 )
 
 Model.save("TrainedModel")
